@@ -1,0 +1,99 @@
+C51 COMPILER V9.60.0.0   I2C                                                               06/29/2020 19:15:04 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE I2C
+OBJECT MODULE PLACED IN .\Objects\i2c.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE i2c.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\i2c.l
+                    -st) TABS(2) OBJECT(.\Objects\i2c.obj)
+
+line level    source
+
+   1          #include <reg51.h>
+   2          #include "i2c.h"
+   3          #include "delay.h"
+   4          
+   5          sbit scl = P2^3;
+   6          sbit sda = P2^2;
+   7          sbit a7  = B^7;
+   8          
+   9          void i2c_clock(){
+  10   1        delay_us(2);
+  11   1        scl = 1;
+  12   1        delay_us(2);
+  13   1        scl = 0;
+  14   1      }
+  15          
+  16          void i2c_start(){
+  17   1        scl = 0;
+  18   1        sda = 1;
+  19   1        delay_us(2);
+  20   1        scl = 1;
+  21   1        delay_us(2);
+  22   1        sda = 0;
+  23   1        delay_us(2);
+  24   1        scl = 0;
+  25   1      }
+  26          void i2c_stop(){
+  27   1        scl = 0;
+  28   1        delay_us(2);
+  29   1        sda = 0;
+  30   1        delay_us(2);
+  31   1        scl = 1;
+  32   1        delay_us(2);
+  33   1        sda = 1;
+  34   1      }
+  35          
+  36          void i2c_write(unsigned char dat){
+  37   1        unsigned char i;
+  38   1        B = dat; // save the dat on B Register
+  39   1        
+  40   1        for(i=0; i<8; i++) {
+  41   2          sda = a7;
+  42   2          i2c_clock();
+  43   2          B = B<<1;
+  44   2        } 
+  45   1        sda = 1;
+  46   1      }
+  47          
+  48          unsigned char i2c_read(){
+  49   1        unsigned char i;
+  50   1        sda = 1; //sda as Input;
+  51   1        B = 0;
+  52   1        for(i=0; i<8; i++){
+  53   2          delay_us(2);
+  54   2          scl = 1;
+C51 COMPILER V9.60.0.0   I2C                                                               06/29/2020 19:15:04 PAGE 2   
+
+  55   2          delay_us(3);
+  56   2          B = B<<1;
+  57   2          B = B | sda;
+  58   2          scl = 0;
+  59   2        }
+  60   1        sda = 0;
+  61   1        return B;
+  62   1      }
+  63          void i2c_ack(){
+  64   1        sda = 0;
+  65   1        i2c_clock();
+  66   1        sda = 1;
+  67   1      }
+  68          
+  69          void i2c_no_ack(){
+  70   1        sda = 1;
+  71   1        i2c_clock();
+  72   1        scl = 1;
+  73   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    190    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       2
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

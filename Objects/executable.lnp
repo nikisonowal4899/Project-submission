@@ -1,0 +1,9 @@
+".\Objects\STARTUP.obj",
+".\Objects\lcd.obj",
+".\Objects\delay.obj",
+".\Objects\i2c.obj",
+".\Objects\eeprom.obj",
+".\Objects\main.obj" 
+TO ".\Objects\executable" 
+PRINT(".\Listings\executable.m51") RAMSIZE(256) 
+CODE( 0X0000-0X1FFF )

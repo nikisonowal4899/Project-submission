@@ -1,0 +1,117 @@
+C51 COMPILER V9.60.0.0   LCD                                                               06/29/2020 19:15:04 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE LCD
+OBJECT MODULE PLACED IN .\Objects\lcd.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE lcd.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\lcd.l
+                    -st) TABS(2) OBJECT(.\Objects\lcd.obj)
+
+line level    source
+
+   1          #include <reg51.h>
+   2          #include "lcd.h"
+   3          #include "delay.h"
+   4          #include "eeprom.h"
+   5          
+   6          sbit rs = P2^0;
+   7          sbit en = P2^1;
+   8          sbit d4 = P2^4;
+   9          sbit d5 = P2^5;
+  10          sbit d6 = P2^6;
+  11          sbit d7 = P2^7;
+  12          //LCD hardware connection //
+  13          
+  14          sbit a0 = B^0; 
+  15          sbit a1 = B^1;
+  16          sbit a2 = B^2;
+  17          sbit a3 = B^3;
+  18          sbit a4 = B^4;
+  19          sbit a5 = B^5;
+  20          sbit a6 = B^6;
+  21          sbit a7 = B^7;
+  22          //B Register variables
+  23          
+  24          void lcd_init() { //function for initialization of the LCD
+  25   1        
+  26   1        delay(5); // some long delay until the lcd powers up
+  27   1        lcd_write(0x33, 0); // set lcd to 8-Bit mode initially
+  28   1        delay(2); // some delay
+  29   1        lcd_write(0x32, 0); // function set to 8-Bit mode again
+  30   1        delay(2); // some delay
+  31   1        lcd_write(0x28, 0); // set to 4-Bit mode
+  32   1        delay(2);
+  33   1        lcd_write(0x0c, 0); //display ON, cursor OFF
+  34   1        delay(1);
+  35   1        lcd_write(0x06, 0); //set entry mode to Auto increment
+  36   1        delay(1);
+  37   1      }
+  38          
+  39          void lcd_write(unsigned char Data, unsigned char select_reg) {
+  40   1        rs = select_reg;
+  41   1        
+  42   1        B = Data; // storing the Data in the B Register
+  43   1        
+  44   1        //First send the upper Nibble
+  45   1        d4 = a4;
+  46   1        d5 = a5;
+  47   1        d6 = a6;
+  48   1        d7 = a7;
+  49   1        delay(1); // little delay before firing the enable pulse
+  50   1        latch_enable();
+  51   1        
+  52   1        //send the lower nibble
+  53   1        d4 = a0;
+  54   1        d5 = a1;
+C51 COMPILER V9.60.0.0   LCD                                                               06/29/2020 19:15:04 PAGE 2   
+
+  55   1        d6 = a2;
+  56   1        d7 = a3;
+  57   1        delay(1); // little delay before firing the enable pulse
+  58   1        latch_enable();
+  59   1        
+  60   1        delay(1); //some delay before returning
+  61   1      }
+  62          
+  63          void lcd_print(unsigned char eeprom_address) {
+  64   1        // Any string to be printed is to be read from the external memory compulsorily
+  65   1        // the fucntion receives the address of the beginning byte of the string
+  66   1        // a string cannot be longer than 16 characters
+  67   1        // all unsigned characters
+  68   1          
+  69   1        unsigned char temp1, i;
+  70   1        
+  71   1        for(i=0; i<16; i++) {
+  72   2          temp1 = eeprom_read_byte(eeprom_address);
+  73   2          if(temp1 == '\0') break;
+  74   2          lcd_write(temp1, 1);
+  75   2          eeprom_address++;
+  76   2        }
+  77   1      }
+  78          
+  79          void latch_enable() {
+  80   1        en = 1;
+  81   1        delay_us(1); //delay
+  82   1        en = 0;
+  83   1        delay_us(1); //delay
+  84   1      }
+  85          
+  86          void reset_screen() {
+  87   1        lcd_write(0x01, 0); // clear screen
+  88   1        delay(2);
+  89   1        lcd_write(0x02, 0); // go to home pos
+  90   1        delay(2);
+  91   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    228    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       3
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,416 @@
+C51 COMPILER V9.60.0.0   MAIN                                                              06/29/2020 19:15:05 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\main
+                    -.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include <reg51.h>
+   2          #include <stdlib.h>
+   3          #include "lcd.h"
+   4          #include "delay.h"
+   5          #include "eeprom.h"
+   6          
+   7          sbit ko1 = P3^0;
+   8          sbit ko2 = P3^1;
+   9          sbit ko3 = P3^2;
+  10          sbit ko4 = P3^3;
+  11          
+  12          sbit ki1 = P1^0;
+  13          sbit ki2 = P1^1;
+  14          sbit ki3 = P1^2;
+  15          sbit ki4 = P1^3;
+  16          // keyboard connections
+  17          
+  18          sbit motor_an = P3^4;
+  19          sbit motor_ct = P3^5;
+  20          // motor driver circuit connection
+  21          
+  22          //Global variables
+  23          #define pw_address 0xE0
+  24          
+  25          unsigned char keyboard_data[13];
+  26          unsigned char temp_array[13];
+  27          unsigned char data_index; // pointer to the position of the keyboard_data array
+  28          unsigned char screen_flag; // tells the programm about the current screen
+  29          unsigned char security_breach; // no. of times incorrect attempts have been made 
+  30          
+  31          //Functions
+  32          void keyboard_scan();
+  33          void keyboard_input(unsigned char);
+  34          void home_screen();
+  35          unsigned char match_password();
+  36          unsigned char confirm_password();
+  37          void motor_fn(unsigned char);
+  38          
+  39          // -*-*-*-*-* MAIN FUNCTION START -*-*-*-*-*-*-*- //
+  40          void main() {
+  41   1        P3 = 0x00; // OUTPUT
+  42   1        P2 = 0x00; // Port 2 as OUTPUT to LCD
+  43   1        P1 = 0xFF; // keyboard input
+  44   1        
+  45   1        lcd_init();
+  46   1        home_screen();
+  47   1        
+  48   1        for(data_index = 0; data_index < 13; data_index++) {
+  49   2          temp_array[data_index] = '\0';
+  50   2          keyboard_data[data_index] = '\0';
+  51   2        }
+  52   1        
+  53   1        data_index = 0;
+  54   1        motor_fn('c');
+C51 COMPILER V9.60.0.0   MAIN                                                              06/29/2020 19:15:05 PAGE 2   
+
+  55   1        
+  56   1        while(1) {
+  57   2          keyboard_scan();
+  58   2        }
+  59   1         
+  60   1      }
+  61          // -*-*-*-*-* MAIN FUNCTION END -*-*-*-*-*-*-*- //
+  62          
+  63          void keyboard_scan() {
+  64   1        // make each output lines low one by one
+  65   1        
+  66   1        ko1 = 0; ko2 = 1; ko3 = 1; ko4 = 1; // make row 1 low
+  67   1        if(ki1 == 0) { // '1' is pressed
+  68   2          delay(220);
+  69   2          keyboard_input('1');
+  70   2          delay(750);
+  71   2          while(ki1 == 0);
+  72   2        }
+  73   1        if(ki2 == 0) { // '2' is pressed
+  74   2          delay(220);
+  75   2          keyboard_input('2');
+  76   2          delay(750);
+  77   2          while(ki2 == 0);
+  78   2        }
+  79   1        if(ki3 == 0) { // '3' is pressed
+  80   2          delay(220);
+  81   2          keyboard_input('3');
+  82   2          delay(750);
+  83   2          while(ki3 == 0);
+  84   2        }
+  85   1        if(ki4 == 0) { // 'A' is pressed
+  86   2          delay(220);
+  87   2          keyboard_input('A');
+  88   2          delay(750);
+  89   2          while(ki4 == 0);
+  90   2        }
+  91   1        // -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*//
+  92   1        
+  93   1        ko1 = 1; ko2 = 0; ko3 = 1; ko4 = 1; // make row 2 low
+  94   1        if(ki1 == 0) { // '4' is pressed
+  95   2          delay(220);
+  96   2          keyboard_input('4');
+  97   2          delay(750);
+  98   2          while(ki1 == 0);
+  99   2        }
+ 100   1        if(ki2 == 0) { // '5' is pressed
+ 101   2          delay(220);
+ 102   2          keyboard_input('5');
+ 103   2          delay(750);
+ 104   2          while(ki2 == 0);
+ 105   2        }
+ 106   1        if(ki3 == 0) { // '6' is pressed
+ 107   2          delay(220);
+ 108   2          keyboard_input('6');
+ 109   2          delay(750);
+ 110   2          while(ki3 == 0);
+ 111   2        }
+ 112   1        if(ki4 == 0) { // 'B' is pressed // 'B' will be used as Display password
+ 113   2          delay(220);
+ 114   2          keyboard_input('B');
+ 115   2          delay(750);
+ 116   2          while(ki4 == 0);
+C51 COMPILER V9.60.0.0   MAIN                                                              06/29/2020 19:15:05 PAGE 3   
+
+ 117   2          keyboard_input('b');
+ 118   2        }
+ 119   1        // -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*//
+ 120   1        
+ 121   1        ko1 = 1; ko2 = 1; ko3 = 0; ko4 = 1; // make row 3 low
+ 122   1        if(ki1 == 0) { // '7' is pressed
+ 123   2          delay(220);
+ 124   2          keyboard_input('7');
+ 125   2          delay(750);
+ 126   2          while(ki1 == 0);
+ 127   2        }
+ 128   1        if(ki2 == 0) { // '8' is pressed
+ 129   2          delay(220);
+ 130   2          keyboard_input('8');
+ 131   2          delay(750);
+ 132   2          while(ki2 == 0);
+ 133   2        }
+ 134   1        if(ki3 == 0) { // '9' is pressed
+ 135   2          delay(220);
+ 136   2          keyboard_input('9');
+ 137   2          delay(750);
+ 138   2          while(ki3 == 0);
+ 139   2        }
+ 140   1        if(ki4 == 0) { // 'C' is pressed
+ 141   2          delay(220);
+ 142   2          keyboard_input('C');
+ 143   2          delay(750);
+ 144   2          while(ki4 == 0);
+ 145   2        }
+ 146   1        // -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*//
+ 147   1        
+ 148   1        ko1 = 1; ko2 = 1; ko3 = 1; ko4 = 0; // make row 4 low
+ 149   1        if(ki1 == 0) { // '*' is pressed
+ 150   2          delay(220);
+ 151   2          keyboard_input('*');
+ 152   2          delay(750);
+ 153   2          while(ki1 == 0);
+ 154   2        }
+ 155   1        if(ki2 == 0) { // '0' is pressed
+ 156   2          delay(220);
+ 157   2          keyboard_input('0');
+ 158   2          delay(750);
+ 159   2          while(ki2 == 0);
+ 160   2        }
+ 161   1        if(ki3 == 0) { // '#' is pressed
+ 162   2          delay(220);
+ 163   2          keyboard_input('#');
+ 164   2          delay(750);
+ 165   2          while(ki3 == 0);
+ 166   2        }
+ 167   1        if(ki4 == 0) { // 'D' is pressed
+ 168   2          delay(220);
+ 169   2          keyboard_input('D');
+ 170   2          delay(750);
+ 171   2          while(ki4 == 0);
+ 172   2        }
+ 173   1      }
+ 174          
+ 175          void keyboard_input(unsigned char dat) {
+ 176   1        
+ 177   1        if(dat == '#') { // Enter is pressed // Enter key will have many purpose    
+ 178   2          if(data_index != 0 && screen_flag == 'H') { // Password matching purpose 
+C51 COMPILER V9.60.0.0   MAIN                                                              06/29/2020 19:15:05 PAGE 4   
+
+ 179   3            unsigned char check = match_password();
+ 180   3            reset_screen();
+ 181   3            
+ 182   3            if(check == '1') {
+ 183   4              lcd_print(0x10); // password match
+ 184   4              motor_fn('f'); // opening the door
+ 185   4              delay(9000);
+ 186   4              motor_fn('c'); // motor stopped // Now the door is in open position // door is to be closed manually b
+             -y pressing 'A' on keyboard
+ 187   4              screen_flag = 'T'; // door open position
+ 188   4            } else if(check == '0') {
+ 189   4              lcd_print(0x20); // wrong password
+ 190   4              screen_flag = 'X';
+ 191   4            } 
+ 192   3          }
+ 193   2          else if(screen_flag == 'C') { // change password Menu
+ 194   3              reset_screen();
+ 195   3              lcd_print(0x30); // old password?     
+ 196   3              lcd_write(0xC0, 0);
+ 197   3              lcd_print(0xC0); // arrow
+ 198   3              lcd_write(0x0F, 0); // cursor on blinking on
+ 199   3              screen_flag = 'O';
+ 200   3            } 
+ 201   2          else if(screen_flag == 'O' && data_index != 0) {
+ 202   3              if(match_password() == '1') { // old password entered is correct, proceed to enter New password
+ 203   4                reset_screen();
+ 204   4                lcd_print(0x40); //New password
+ 205   4                lcd_write(0xC0, 0);
+ 206   4                lcd_print(0xC0); //Arrow
+ 207   4                lcd_write(0x0F, 0); // cursor on blinking on
+ 208   4                screen_flag = 'N';
+ 209   4                for(data_index=0; data_index<13; data_index++) keyboard_data[data_index] = '\0'; // clearing the keyb
+             -oard_data array
+ 210   4                data_index = 0;
+ 211   4              } else {
+ 212   4                reset_screen();
+ 213   4                lcd_write(0x0C, 0); // cursor off blinking off
+ 214   4                lcd_print(0x20); // wrong password
+ 215   4                lcd_write(0xC0, 0);
+ 216   4                lcd_print(0x50); // Go to home
+ 217   4                screen_flag = 'W';
+ 218   4              }
+ 219   3            } 
+ 220   2          else if(screen_flag == 'N') {
+ 221   3              unsigned char i;
+ 222   3              reset_screen();
+ 223   3              lcd_print(0x60); // conf. password
+ 224   3              lcd_write(0xC0, 0);
+ 225   3              lcd_print(0xC0); // arrow
+ 226   3              
+ 227   3              //copy Data from keyboard_array to temp_array for confirming purpose later
+ 228   3              for(i=0; i< data_index; i++) {
+ 229   4                temp_array[i] = keyboard_data[i];
+ 230   4              }
+ 231   3              data_index = 0;
+ 232   3              screen_flag = 'F';
+ 233   3            } 
+ 234   2          else if(screen_flag == 'F') {
+ 235   3            unsigned char temp_address = pw_address;
+ 236   3              if(confirm_password() == '1') { //password matched// change the password
+ 237   4                reset_screen();
+ 238   4                
+C51 COMPILER V9.60.0.0   MAIN                                                              06/29/2020 19:15:05 PAGE 5   
+
+ 239   4                eeprom_write_string(keyboard_data, pw_address); // storing the new password in EEPROM
+ 240   4                
+ 241   4                lcd_write(0x0C, 0); // cursor off blinking off
+ 242   4                lcd_print(0x70); // Done !!
+ 243   4                lcd_write(0xC0, 0);
+ 244   4                lcd_print(0x80); // press Home
+ 245   4                screen_flag = 'J'; // J for Null function
+ 246   4              } else {
+ 247   4                reset_screen();
+ 248   4                lcd_write(0x0C, 0); // cursor off blinking off
+ 249   4                lcd_print(0xD0); // incorrect
+ 250   4                lcd_write(0xC0, 0);
+ 251   4                lcd_print(0x80); // press home
+ 252   4                screen_flag = 'J'; // Null function
+ 253   4              }
+ 254   3              for(data_index=0; data_index<13; data_index++) temp_array[data_index] = '\0'; // clearing the temp arr
+             -ay
+ 255   3            }
+ 256   2            return ;
+ 257   2        } 
+ 258   1        
+ 259   1        else if(dat == 'A') { // close the door if it is already open
+ 260   2          if(screen_flag == 'T') {
+ 261   3            motor_fn('r');
+ 262   3            delay(9000);
+ 263   3            motor_fn('c');
+ 264   3            home_screen();
+ 265   3          }   
+ 266   2        }
+ 267   1        
+ 268   1        else if((dat == 'B' || dat == 'b') && (screen_flag == 'H' || screen_flag == 'O' || screen_flag == 'N' || 
+             -screen_flag == 'F')){
+ 269   2          unsigned char index;
+ 270   2          if(dat == 'B') { // show passwod
+ 271   3            lcd_write(0xC4, 0); // set cursor to the beginning
+ 272   3            for(index=0; index<data_index; index++) lcd_write(keyboard_data[index], 1);
+ 273   3          }
+ 274   2          else {
+ 275   3            lcd_write(0xC4, 0); // set cursor to the beginning 
+ 276   3            for(index=0; index<data_index; index++) lcd_write(0xC8, 1); // print katakana 'ne'
+ 277   3          }
+ 278   2          return;
+ 279   2        }
+ 280   1      
+ 281   1        else if(dat == 'D' && screen_flag != 'T') { // Home key is pressed  
+ 282   2          home_screen();
+ 283   2          
+ 284   2          return ;
+ 285   2        } 
+ 286   1          
+ 287   1        else if(dat == '*') { // Backspace is pressed
+ 288   2          if(data_index > 0 && (screen_flag == 'H' || screen_flag == 'O' || screen_flag == 'N' || screen_flag == '
+             -F')) {
+ 289   3            lcd_write(0x10, 0); //Moving LCD cursor backward
+ 290   3            lcd_write(' ', 1); // Printing a Space
+ 291   3            lcd_write(0x10, 0); // Moving cursor backward again
+ 292   3            data_index--;
+ 293   3          } 
+ 294   2          return ;
+ 295   2        } 
+ 296   1        
+ 297   1        else if(dat == 'C') { // Setting Menu is Called // Setting menu can be called only from Home screen
+C51 COMPILER V9.60.0.0   MAIN                                                              06/29/2020 19:15:05 PAGE 6   
+
+ 298   2          if(screen_flag == 'H') {
+ 299   3            reset_screen();
+ 300   3            lcd_write(0x0C, 0); // Cursor off Blinking off
+ 301   3            lcd_print(0x90); // change password
+ 302   3            lcd_write(0xC0, 0); // Go to second row
+ 303   3            lcd_print(0xA0); //press enter
+ 304   3            screen_flag = 'C';
+ 305   3            data_index = 0;
+ 306   3          }   
+ 307   2          return ;
+ 308   2        }
+ 309   1        
+ 310   1        else {
+ 311   2          if(data_index < 12 && (screen_flag == 'H' || screen_flag == 'O' || screen_flag == 'N' || screen_flag == 
+             -'F')) { // Store the input in Keyboard Array
+ 312   3            lcd_write(0xC8, 1); // katakana 'Ne' character
+ 313   3            keyboard_data[data_index] = dat;
+ 314   3            data_index++;
+ 315   3          }
+ 316   2        }
+ 317   1      }
+ 318          
+ 319          unsigned char match_password() {
+ 320   1        unsigned char password_array[13]; 
+ 321   1        unsigned char temp_address = pw_address, temp, index = 0;
+ 322   1        
+ 323   1        do { //copying the password from the EEPROM
+ 324   2          temp = eeprom_read_byte(temp_address);
+ 325   2          password_array[index] = temp;
+ 326   2          index++; temp_address++;
+ 327   2        } while(temp != '\0'); 
+ 328   1        index--; // index is the Size of the password array
+ 329   1        
+ 330   1        if(index == data_index) {
+ 331   2          for(index=0; index<data_index; index++) {
+ 332   3            if(keyboard_data[index] != password_array[index]) return '0';
+ 333   3          }
+ 334   2          return '1';
+ 335   2        } else return '0';
+ 336   1      }
+ 337          
+ 338          unsigned char confirm_password() {
+ 339   1        unsigned char i=0;
+ 340   1        while(temp_array[i] != '\0') i++; //Acquiring Size of temp array
+ 341   1        if(i == data_index) {
+ 342   2          for(i=0; i<data_index; i++) { // Matching each character
+ 343   3            if(keyboard_data[i] != temp_array[i]) return '0';
+ 344   3          }
+ 345   2          return '1';
+ 346   2        } else return '0';
+ 347   1      }
+ 348          
+ 349          void home_screen() { // the default lcd screen
+ 350   1        unsigned char i;
+ 351   1        for(i=0; i<13; i++) { // clearing the keyboard Data array
+ 352   2            keyboard_data[i] = '\0';
+ 353   2          }
+ 354   1        data_index = 0;
+ 355   1        reset_screen();
+ 356   1        lcd_print(0xB0); // enter password
+ 357   1        lcd_write(0xC0, 0); //Jump to second line position 0
+ 358   1        lcd_print(0xC0); // arrow
+C51 COMPILER V9.60.0.0   MAIN                                                              06/29/2020 19:15:05 PAGE 7   
+
+ 359   1        lcd_write(0x0F, 0); // cursor ON blinking ON
+ 360   1        screen_flag = 'H';  
+ 361   1      } 
+ 362          
+ 363          void motor_fn(unsigned char fn) {
+ 364   1        if(fn == 'f') { //motor forward direction
+ 365   2          motor_an = 1;
+ 366   2          motor_ct = 0;
+ 367   2        } else if (fn == 'r') { // motor reverse direction
+ 368   2          motor_an = 0;
+ 369   2          motor_ct = 1;
+ 370   2        } else if (fn == 'c') { // motor turn off
+ 371   2          motor_an = 0;
+ 372   2          motor_ct = 0;
+ 373   2        }
+ 374   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1402    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     29      17
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
